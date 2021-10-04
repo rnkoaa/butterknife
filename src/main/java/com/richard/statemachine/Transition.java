@@ -5,19 +5,20 @@ import java.util.Optional;
 
 public class Transition {
     private boolean finalState = false;
-    private State initialState;
-    private State nextState;
+    private State source;
+    private State target;
     private Event eventTrigger;
 
     public Transition() {}
 
     public Transition(State initialState) {
         Objects.requireNonNull(initialState);
-        this.initialState = initialState;
+        this.source = initialState;
     }
 
-    public Transition next(State nextState) {
-        this.nextState = nextState;
+    /** Transition to the next state */
+    public Transition target(State target) {
+        this.target = target;
         return this;
     }
 
@@ -26,20 +27,26 @@ public class Transition {
         return this;
     }
 
+    // public Transition action(Action<EventContext> ctx) {
+    //     // ctx.apply()
+
+    //     return this;
+    // }
+
     public Transition finalState() {
         this.finalState = true;
         return this;
     }
 
     public State getStartingState() {
-        return initialState;
+        return source;
     }
 
-    public Optional<State> getNextState() {
+    public Optional<State> getTarget() {
         if (this.finalState) {
             return Optional.empty();
         }
-        return Optional.ofNullable(nextState);
+        return Optional.ofNullable(target);
     }
 
     public Event getEvent() {
@@ -48,11 +55,11 @@ public class Transition {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder("Start " + this.initialState);
+        StringBuilder builder = new StringBuilder("Start " + this.source);
         if (this.finalState) {
             builder.append("\n>>> Final");
         } else {
-            builder.append("\nNext: " + this.nextState).append("\nEvent: " + this.eventTrigger);
+            builder.append("\nNext: " + this.target).append("\nEvent: " + this.eventTrigger);
         }
 
         return builder.toString();

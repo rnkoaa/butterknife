@@ -10,13 +10,22 @@ public class StateMachine {
     private final UUID id;
     private State currentState;
     private State finalState;
+    private final StateContext<State, State> stateContext;
+    private StateMachineListener listener;
     private Map<Event, List<Transition>> transitionTable;
     private boolean complete;
+    private boolean active;
 
     public StateMachine(State initialState) {
         this.id = UUID.randomUUID();
         this.currentState = initialState;
         this.transitionTable = new HashMap<>();
+        this.stateContex = new StateContext<>();
+    }
+
+    public StateMachine registerListener(StateMachineListener listener) {
+        this.listener = listener;
+        return this;
     }
 
     /** add a new state to the states */
@@ -48,15 +57,25 @@ public class StateMachine {
                 return;
             }
 
-            if (transition.getNextState().isEmpty()) {
+            if (transition.getTarget().isEmpty()) {
                 System.out.printf(
                         "Transition initialState: %s, CurrentState: %s\n",
                         transition.getStartingState(), currentState);
                 return;
             }
 
+            State target = transition.getTarget().get();
+            if (listener != null) {
+                listener.stateChanged(this.currentState, target);
+            }
+
+            System.out.println("Exiting Current State: " + this.currentState);
+            System.out.println("Entering Next State: " + target);
+
             // transition exists, so update current state
-            this.currentState = transition.getNextState().get();
+            this.currentState = target;
+            System.out.println("Executing Current state '" + this.currentState + "' Action ");
+
             finalizedBy();
         }
 
@@ -68,11 +87,22 @@ public class StateMachine {
         maybeStartingState.ifPresent(
                 transition -> {
                     transition
-                            .getNextState()
+                            .getTarget()
                             .ifPresentOrElse(
                                     nextState -> {
                                         // transition exists, so update current state
+                                        if (listener != null) {
+                                            listener.stateChanged(this.currentState, nextState);
+                                        }
+                                        System.out.println(
+                                                "Exiting Current State: " + this.currentState);
+                                        System.out.println("Entering Next State: " + nextState);
+
                                         this.currentState = nextState;
+                                        System.out.println(
+                                                "Executing Current state '"
+                                                        + this.currentState
+                                                        + "' Action ");
                                         finalizedBy();
                                     },
                                     () -> {
@@ -93,8 +123,6 @@ public class StateMachine {
         builder.append("\nId: ").append(id.toString());
         builder.append("\nCurrentState: ").append(currentState);
         builder.append("\nStatus: ").append(complete ? "complete" : "In Progress");
-        // builder.append("\n=============== Transitions ================================");
-        // builder.append("\n=============== End Transitions ============================");
         return builder.toString();
     }
 }
